@@ -34,7 +34,7 @@ def main():
             print "Start to do the tt4N test."
             break
         if tt4P.case('tt4L'):
-            print "Start to do the tt4A test."
+            print "Start to do the tt4L test."
             break
         if tt4P.case('tt4N'):
             print "Start to do the tt4N test."
