@@ -9,7 +9,7 @@ from smbus2 import SMBusWrapper, i2c_msg
 This Python code is for Parade TT41701 IC get report 
 usage 
 Case1 to print the coordinate data
-python tt4Main.py --tt4P filename.txt
+python tt4Main.py --tt4P --filename.txt
 
 Case 2
 
