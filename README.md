@@ -1,8 +1,24 @@
 # tt4ScriptOpen
 This is a script for RPI Python that can control and read Parade TT41701 touch driver
 # First Case : tt4P
-Usage 
-python tt4Main.py --tt4P --xxxx.txt
+usage 
+Case1 to print the coordinate data
+python tt4Main.py --tt4P --filename.txt (print the result to file)
+python tt4Main.py --tt4P (do not print to file)
 
-  --tt4P : to execute the case of print the touch raw data
-  --xxxx.txt : to save the coordinte to the xxxx.txt file
+Case 2
+
+Case 3
+
+# Case 4 : tt4R
+Case 4 to get the Cm and Cp self test data
+python tt4Main.py --tt4R --filename.txt
+
+# Case 5 : tt4S
+Case 5 to get the mutual/self data
+python tt4Main.py --tt4S --xx --test.txt
+xx
+0: mutual/self Raw
+1: mutual/self baseline
+2: mutual/self diffcount
+test.txt : raw data file name 
