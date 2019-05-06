@@ -18,7 +18,11 @@ python tt4Main.py --tt4R --filename.txt
 Case 5 to get the mutual/self data
 python tt4Main.py --tt4S --xx --test.txt
 xx
-0: mutual/self Raw
+0: mutual/self Raw  : self raw data still has issue
 1: mutual/self baseline
 2: mutual/self diffcount
 test.txt : raw data file name 
+
+Known issue
+1. case 5 : mutual/self raw and base line self has the issue.
+2. ctrl+C : has the issue of unable to turn off the LDO power.
