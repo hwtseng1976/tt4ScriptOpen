@@ -27,6 +27,7 @@ def tt4SusScan():
             success=result[2]
             print 'suspend scan response {0}'.format(result)
         except KeyboardInterrupt:
+            tt4.ldoPowerOff()  
             GPIO.cleanup()
 
 def tt4GetSysInf():            
@@ -56,6 +57,7 @@ def tt4GetSysInf():
                 trNum=[xNum,yNum]
                 return trNum
         except KeyboardInterrupt:
+            tt4.ldoPowerOff()  
             GPIO.cleanup() 
             
 def tt4GetRawData(txNum,rxNum):
@@ -89,16 +91,17 @@ def tt4GetRawData(txNum,rxNum):
                 GPIO.cleanup()
                 sys.exit()               
         except KeyboardInterrupt:
+            tt4.ldoPowerOff()  
             GPIO.cleanup()
     
     countByte=0
     index=0
-   
+    executeCmd=1
     while countByte<totalByte: # read Cm self test raw data;
-        tt4.i2cw(TT4Addr,cmGetRepCmd)
+        if executeCmd==1:
+            tt4.i2cw(TT4Addr,cmGetRepCmd)
         try:
-            #GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=500)
-            tt4.delayMs(1.5)
+            #GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=500)            
             if GPIO.input(bInt)==0:
                 result=tt4.i2cr(TT4Addr,2)
                 print result
@@ -114,8 +117,14 @@ def tt4GetRawData(txNum,rxNum):
                 while count<(thisSensByte):
                     cmRawData[0][index]=int((result[count+11]<<8)+result[count+10]) #fF/10
                     count=count+2
-                    index=index+1                
+                    index=index+1
+                tt4.delayMs(1)
+                executeCmd=1
+            else:
+                tt4.delayMs(2)
+                executeCmd=0                
         except KeyboardInterrupt:
+            tt4.ldoPowerOff()
             GPIO.clearnup()
     #Send Cp Self test start     
     statusResult=0xFFFF     
@@ -134,18 +143,20 @@ def tt4GetRawData(txNum,rxNum):
                 sys.exit()
             elif result[6]==0x01:
                 print 'not support Cp self test fail'
+                tt4.ldoPowerOff()
                 GPIO.cleanup()
                 sys.exit()           
     except KeyboardInterrupt:
+        tt4.ldoPowerOff()
         GPIO.cleanup()
     index=0
     countByte=0
+    executeCmd=1
     while countByte<(txNum+rxNum)*4:
         index=0
         #countByte=0
         tt4.i2cw(TT4Addr,cpGetRepCmd)
         try:
-            tt4.delayMs(1.5)
             #GPIO.wait_for_edge(bInt,GPIO.FALLING)
             if GPIO.input(bInt)==0:
                 result=tt4.i2cr(TT4Addr,2)
@@ -161,8 +172,14 @@ def tt4GetRawData(txNum,rxNum):
                 while count<(thisSensByte):
                     cpRawData[0][index]=int((result[count+11]<<8)+result[count+10]) #fF/10
                     count=count+2
-                    index=index+1                   
+                    index=index+1
+                tt4.delayMs(1)
+                executeCmd=1
+            else:
+                executeCmd=0
+                tt4.delayMs(2)                
         except KeyboardInterrupt:
+            tt4.ldoPowerOff() 
             GPIO.cleanup()
     return cmRawData,cpRawData    
      
@@ -196,7 +213,7 @@ def tt4R():
     tt4.delayMs(10)
     tt4SusScan()
     tt4.delayMs(10)
-    [rxNum,txNum]=tt4GetSysInf()
+    [txNum,rxNum]=tt4GetSysInf()
 
     totalByte=txNum*rxNum*2+2      
     cmRawData=np.zeros((1,totalByte/2))
@@ -231,7 +248,8 @@ def tt4R():
                 fo.write('\n')
                 fo.write('page start \n')
         except KeyboardInterrupt:
-            print 'exit :%s' %time.time() 
+            print 'exit :%s' %time.time()
+            tt4.ldoPowerOff()            
             GPIO.cleanup()
             if fprint==1:
                 fo.close()

@@ -79,6 +79,9 @@ def powerOnRst(powerOnWait,rstWidth):
     #GPIO.output((en1,bRst),(GPIO.HIGH,GPIO.HIGH))
     GPIO.output((ene,ent,en18,oeb,bRst),(GPIO.HIGH,GPIO.HIGH,GPIO.HIGH,GPIO.LOW,GPIO.HIGH))
 
+def ldoPowerOff():
+    GPIO.output((ene,ent,en18,oeb,bRst),(GPIO.LOW,GPIO.LOW,GPIO.LOW,GPIO.LOW,GPIO.LOW))    
+    
 def TT4resolve(fingerList):
     length=(fingerList[1]<<8)+fingerList[0]
     rId=fingerList[2]

@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import RPi.GPIO as GPIO
 import time
-import lib.tt4PrintRep as tt4P
+import lib.tt4P as tt4P
 import lib.tt4R as tt4R
 import lib.tt4S as tt4S
 import lib.tt4Lib as tt4
@@ -29,6 +29,13 @@ xx
 1: mutual/self baseline
 2: mutual/self diffcount
 test.txt : raw data file name 
+V1
+initial release
+V2
+1. add tt4S : scan raw data function
+V3 
+1. improve the tt4P time diff accuracy
+2. poweroff before leave each test case
 """
 
 def main():
@@ -42,7 +49,7 @@ def main():
     while tt4.switch(n):
         if tt4.case('tt4P'):
             print "Start to do the tt4P test."
-            tt4P.tt4PrintRep()
+            tt4P.tt4P()
             break
         if tt4.case('tt4A'):
             print "Start to do the tt4A test."

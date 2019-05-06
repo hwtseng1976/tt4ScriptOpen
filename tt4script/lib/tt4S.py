@@ -36,6 +36,7 @@ def tt4SusScan():
             success=result[2]
             print 'suspend scan response {0}'.format(result)
         except KeyboardInterrupt:
+            tt4.ldoPowerOff() 
             GPIO.cleanup()
 
 def tt4GetSysInf():            
@@ -65,22 +66,24 @@ def tt4GetSysInf():
                 trNum=[xNum,yNum]
                 return trNum
         except KeyboardInterrupt:
+            tt4.ldoPowerOff() 
             GPIO.cleanup() 
 def tt4PanlScan():
     scanCmd=[0x04,0x00,0x05,0x00,0x2F,0x00,0x2A]
-    result=0xFF
+    result=0xFFFF
     print 'start to do the panel scan'
-    while result!=0x00:
+    while result!=0x1F00:
         tt4.i2cw(TT4Addr,scanCmd)
         try:
             GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=500)
             data=tt4.i2cr(TT4Addr,6)
-            result=data[5]
-            if result==0x00:
-               print 'Scan success:0x%02x'%result
+            result=(data[2]<<8)+data[5]
+            if result==0x1F00:
+               print 'Scan success:0x%04x'%result
             else:
-               print 'Scan Fail :0x%02x'%result          
+               print 'Scan Fail :0x%04x'%result          
         except KeyboardInterrupt:
+            tt4.ldoPowerOff()
             GPIO.cleanup()
             
             
@@ -99,12 +102,14 @@ def tt4GetScan(txNum,rxNum,cmdNum):
     print 'Start to retrive Data'    
     countByte=0
     index=0
-   
+    executeCmd=1
     while countByte<totalByte: # read Mutal data
-        tt4.i2cw(TT4Addr,retriveScanDataM)
+        if executeCmd==1:
+            tt4.i2cw(TT4Addr,retriveScanDataM)
+        else:
+           executeCmd=0
         try:
-            #GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=500)
-            tt4.delayMs(3)
+            #GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=500)            
             if GPIO.input(bInt)==0:
                 result=tt4.i2cr(TT4Addr,2)
                 print result
@@ -119,22 +124,31 @@ def tt4GetScan(txNum,rxNum,cmdNum):
                 count=0         
                 while count<(thisSensByte*2):
                     val=int((result[count+11]<<8)+result[count+10])
-                    val=twos_comp(val,16)
+                    if cmdNum==2:
+                        val=twos_comp(val,16)
+                    else: 
+                        val=val
                     mutual[0][index]=val 
                     count=count+2
-                    index=index+1                
+                    index=index+1
+                tt4.delayMs(0.5)
+                executeCmd=1
+            else:
+                tt4.delayMs(1)
+                executeCmd=0                
         except KeyboardInterrupt:
-            GPIO.clearnup()
+            tt4.ldoPowerOff() 
+            GPIO.cleanup()
 # start to retrive Self data
-    #tt4PanlScan()    
+    tt4PanlScan()    
     print 'Start to retvie self data'
     index=0
     countByte=0
+    executeCmd=1
     while countByte<(txNum+rxNum):
-        index=0
-        tt4.i2cw(TT4Addr,retriveScanDataS)
+        if executeCmd==1:
+            tt4.i2cw(TT4Addr,retriveScanDataS)
         try:
-            tt4.delayMs(3)
             #GPIO.wait_for_edge(bInt,GPIO.FALLING)
             if GPIO.input(bInt)==0:
                 result=tt4.i2cr(TT4Addr,2)
@@ -149,11 +163,18 @@ def tt4GetScan(txNum,rxNum,cmdNum):
                 count=0          
                 while count<(thisSensByte*2):
                     val=int((result[count+11]<<8)+result[count+10])
-                    val=twos_comp(val,16)
+                    if cmdNum==2:
+                        val=twos_comp(val,16)
                     self[0][index]=val 
                     count=count+2
-                    index=index+1                   
+                    index=index+1
+                tt4.delayMs(0.5)
+                executeCmd=1
+            else:
+                tt4.delayMs(1)
+                executeCmd=0                
         except KeyboardInterrupt:
+            tt4.ldoPowerOff()
             GPIO.cleanup()
     return mutual,self    
      
@@ -199,13 +220,13 @@ def tt4S():
                     fo.write('{0},'.format(mutual[0][index]))                      
                 index=index+1
                 if index%rxNum==0:
-                    print '{0},'.format(self[0][indexTx]),
+                    print '{0},'.format(self[0][indexTx+rxNum]),
                     print ''
                     if fprint==1:
-                        fo.write('{0}\n'.format(self[0][indexTx]))
+                        fo.write('{0}\n'.format(self[0][indexTx+rxNum]))
                         indexTx=indexTx+1
                         
-            for i in range(txNum,txNum+rxNum-1):
+            for i in range(0,rxNum):
                 print '{0},'.format(self[0][i]),
                 if fprint==1:
                     fo.write('{0},'.format(self[0][i]))
@@ -215,6 +236,7 @@ def tt4S():
                 fo.write('Page Start\n')
         except KeyboardInterrupt:
             print 'exit :%s' %time.time() 
+            tt4.ldoPowerOff()  
             GPIO.cleanup()
             if fprint==1:
                 fo.close()
