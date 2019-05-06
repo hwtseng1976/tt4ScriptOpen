@@ -33,7 +33,7 @@ def tt4P():
                 #print 'time:%s INT Low'%time.time()
                 count=count+1
                 tNow=time.time()
-                diff=tNow-tPre
+                diff=(tNow-tPre)*1000 # in mS order
                 tPre=tNow
                 data1=tt4.readFgData(TT4Addr,3,10)
                 a,b=tt4.TT4resolve(data1)
