@@ -81,7 +81,63 @@ def powerOnRst(powerOnWait,rstWidth):
 
 def ldoPowerOff():
     GPIO.output((ene,ent,en18,oeb,bRst),(GPIO.LOW,GPIO.LOW,GPIO.LOW,GPIO.LOW,GPIO.LOW))    
-    
+
+def tt4SusScan():
+    susCommand=[0x04,0x00,0x05,0x00,0x2F,0x00,0x03]
+    success=0xFF
+    #tt4.delayMs(1)
+    while success!=0x1F:
+        i2cw(TT4Addr,susCommand)
+        try:
+            GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=300) 
+            result=i2cr(TT4Addr,5)
+            success=result[2]
+            print 'suspend scan response {0}'.format(result)
+        except KeyboardInterrupt:
+            ldoPowerOff() 
+            GPIO.cleanup()
+
+def tt4Resume():
+    resCommand=[0x04,0x00,0x05,0x00,0x2F,0x00,0x04]
+    success=0xFF
+    #tt4.delayMs(1)
+    while success!=0x1F:
+        i2cw(TT4Addr,resCommand)
+        try:
+            GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=300) 
+            result=i2cr(TT4Addr,5)
+            success=result[2]
+            print 'resume scan response {0}'.format(result)
+        except KeyboardInterrupt:
+            ldoPowerOff() 
+            GPIO.cleanup()
+def tt4GetSysInf():            
+    sysInfCmd=[0x04,0x00,0x05,0x00,0x2F,0x00,0x02]
+    dataleng=0x0000
+    try:
+        while dataleng!=0x3300:
+            i2cw(TT4Addr,sysInfCmd)
+            GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=300) 
+            data=i2cr(TT4Addr,3)
+            dataleng=(data[0]<<8)+data[1]
+            if dataleng==0x3300:
+                data=i2cr(TT4Addr,data[0]) 
+                fwVer=(data[9]<<8)+data[10]
+                fwRev=(data[11]<<16)+(data[12]<<8)+data[13]
+                cfgVer=(data[14]<<8)+data[15]
+                xNum=data[33]
+                yNum=data[34]
+                print 'fwVer :0x%04x'%fwVer
+                print 'fwRev :0x%06x'%fwRev
+                print 'cfgVer:0x%04x'%cfgVer
+                print 'xNum:0x%02x'%xNum
+                print 'yNum:0x%02x'%yNum
+                trNum=[xNum,yNum]
+                return trNum
+    except KeyboardInterrupt:
+        ldoPowerOff() 
+        GPIO.cleanup() 
+            
 def TT4resolve(fingerList):
     length=(fingerList[1]<<8)+fingerList[0]
     rId=fingerList[2]
@@ -161,6 +217,7 @@ def TT4Init():
             else:
                print 'Bootload check fail data2=0x%02x' %result
     except KeyboardInterrupt:
+        ldoPowerOff()
         GPIO.cleanup()   
     print"End:%s"%time.time()
     data1=i2cw(TT4Addr,TT4AppInit)
@@ -173,4 +230,5 @@ def TT4Init():
             result=(data[1]<<8)+data[0]
             print "receive:0x%04x" %result
     except KeyboardInterrupt:
+        ldoPowerOff()
         GPIO.cleanup() 

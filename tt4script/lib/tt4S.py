@@ -22,52 +22,6 @@ def twos_comp(val,bits):
         val=val-(1<<bits)
     return val
 
-def tt4SusScan():
-    susCommand=[0x04,0x00,0x05,0x00,0x2F,0x00,0x03]
-    success=0x2F
-    #tt4.i2cw(TT4Addr,susCommand)
-    tt4.delayMs(1)
-    while success!=0x1F:
-        tt4.i2cw(TT4Addr,susCommand)
-        try:
-            #tt4.i2cw(TT4Addr,susCommand)
-            GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=300) 
-            result=tt4.i2cr(TT4Addr,5)
-            success=result[2]
-            print 'suspend scan response {0}'.format(result)
-        except KeyboardInterrupt:
-            tt4.ldoPowerOff() 
-            GPIO.cleanup()
-
-def tt4GetSysInf():            
-    sysInfCmd=[0x04,0x00,0x05,0x00,0x2F,0x00,0x02]
-    dataleng=0x0000
-    while dataleng!=0x3300:
-        tt4.i2cw(TT4Addr,sysInfCmd)
-        try:
-            #tt4.i2cw(TT4Addr,sysInfCmd)
-            #tt4.delayMs(1.5)
-            #if GPIO.input(bInt)==0:
-            GPIO.wait_for_edge(bInt,GPIO.FALLING,timeout=300) 
-            data=tt4.i2cr(TT4Addr,3)
-            dataleng=(data[0]<<8)+data[1]
-            if dataleng==0x3300:
-                data=tt4.i2cr(TT4Addr,data[0]) 
-                fwVer=(data[9]<<8)+data[10]
-                fwRev=(data[11]<<16)+(data[12]<<8)+data[13]
-                cfgVer=(data[14]<<8)+data[15]
-                xNum=data[33]
-                yNum=data[34]
-                print 'fwVer :0x%04x'%fwVer
-                print 'fwRev :0x%06x'%fwRev
-                print 'cfgVer:0x%04x'%cfgVer
-                print 'rxNum:0x%02x'%xNum
-                print 'txNum:0x%02x'%yNum
-                trNum=[xNum,yNum]
-                return trNum
-        except KeyboardInterrupt:
-            tt4.ldoPowerOff() 
-            GPIO.cleanup() 
 def tt4PanlScan():
     scanCmd=[0x04,0x00,0x05,0x00,0x2F,0x00,0x2A]
     result=0xFFFF
@@ -184,49 +138,49 @@ def tt4S():
         print 'wrong argument'
         GPIO.cleanup()
         sys.exit()
-    elif len(sys.argv)==3:
+    elif len(sys.argv)==3 and sys.argv[2].startswith('--'):
         print 'Without sav to file arguments'
         cmdNum=int(sys.argv[2][2:])
         print 'Command Number is: 0x%02x' %cmdNum
-    elif len(sys.argv)==4:
+    elif len(sys.argv)==4 and sys.argv[3].startswith('--'):
         print 'with save to file arguments'
         cmdNum=int(sys.argv[2][2:])
         print 'Command Number is: 0x%02x' %cmdNum
         filename=sys.argv[3][2:]
         print 'fileName:{0}'.format(filename)          
         fo = open(filename, "w")
-        fprint=1   
+        fprint=1
+    else:
+        print 'wrong argument'
+        
     tt4.TT4Init()
     tt4.delayMs(1)
-    tt4SusScan()
+    tt4.tt4SusScan()
     tt4.delayMs(1)
-    [rxNum,txNum]=tt4GetSysInf()
-    totalByte=txNum*rxNum*2      
+    [xNum,yNum]=tt4.tt4GetSysInf() #rx=x; tx=y
+    totalByte=xNum*yNum*2      
     mutual=np.zeros((1,totalByte/2))
-    self=np.zeros((1,(txNum+rxNum)))    
-
-    while True:
-        print 'Initial get:%s' %time.time()      
-        index=0
-        indexTx=0        
-        #tt4SusScan()  # suspend agian
-        #tt4.delayMs(1)
-        try:
+    self=np.zeros((1,(yNum+xNum)))    
+    try:
+        while True:
+            print 'Initial get:%s' %time.time()      
+            index=0
+            indexTx=0        
             tt4.delayMs(2)           
-            mutual,self=tt4GetScan(txNum,rxNum,cmdNum)
+            mutual,self=tt4GetScan(yNum,xNum,cmdNum)
             while index<(totalByte/2):
                 print '{0},'.format(mutual[0][index]),
                 if fprint==1:
                     fo.write('{0},'.format(mutual[0][index]))                      
-                index=index+1
-                if index%rxNum==0:
-                    print '{0},'.format(self[0][indexTx+rxNum]),
+                    index=index+1
+                if index%xNum==0:
+                    print '{0},'.format(self[0][indexTx+xNum]),
                     print ''
                     if fprint==1:
-                        fo.write('{0}\n'.format(self[0][indexTx+rxNum]))
+                        fo.write('{0}\n'.format(self[0][indexTx+xNum]))
                         indexTx=indexTx+1
-                        
-            for i in range(0,rxNum):
+                            
+            for i in range(0,xNum):
                 print '{0},'.format(self[0][i]),
                 if fprint==1:
                     fo.write('{0},'.format(self[0][i]))
@@ -234,10 +188,9 @@ def tt4S():
             if fprint==1:
                 fo.write('\n')
                 fo.write('Page Start\n')
-        except KeyboardInterrupt:
-            print 'exit :%s' %time.time() 
-            tt4.ldoPowerOff()  
-            GPIO.cleanup()
-            if fprint==1:
-                fo.close()
-            break
+    except KeyboardInterrupt:
+        print 'exit :%s' %time.time() 
+        tt4.ldoPowerOff()  
+        GPIO.cleanup()
+        if fprint==1:
+            fo.close()
