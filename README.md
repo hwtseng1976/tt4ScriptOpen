@@ -6,9 +6,13 @@ Case1 to print the coordinate data
 python tt4Main.py --tt4P --filename.txt (print the result to file)
 python tt4Main.py --tt4P (do not print to file)
 
-Case 2
+# Case 2 get tt4 system information and suspend the IC
+python tt4Main.py --tt4I
 
-Case 3
+# Case 3 simulate EMR inRang sync function.
+python tt4Main.py --tt4Sy --xx --log.txt
+xx : suspend time
+log.txt: log the coordinate the time for the touch
 
 # Case 4 : tt4R
 Case 4 to get the Cm and Cp self test data
